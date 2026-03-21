@@ -1,0 +1,5 @@
+{
+  "name": "Neural Core OS",
+  "description": "A high-performance hardware-inspired dashboard for monitoring and controlling neural AI agents, featuring real-time activity streams and swarm topology mapping.",
+  "requestFramePermissions": []
+}
