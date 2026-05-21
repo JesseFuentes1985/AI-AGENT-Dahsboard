@@ -14,32 +14,53 @@
   --accent-secondary: #ff007a;
   --accent-tertiary: #ccff00;
   --text-dim: #8e9299;
+  --text-main: #ffffff;
   --border-subtle: rgba(255, 255, 255, 0.05);
   --border-active: rgba(0, 242, 255, 0.3);
+  --header-bg: rgba(0, 0, 0, 0.4);
+}
+
+.light {
+  --bg-deep: #f0f2f5;
+  --bg-surface: #ffffff;
+  --bg-card: #f8f9fa;
+  --accent-primary: #0088cc;
+  --accent-secondary: #d4006c;
+  --accent-tertiary: #88aa00;
+  --text-dim: #5f6368;
+  --text-main: #202124;
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-active: rgba(0, 136, 204, 0.4);
+  --header-bg: rgba(255, 255, 255, 0.8);
 }
 
 body {
   background-color: var(--bg-deep);
-  color: #ffffff;
+  color: var(--text-main);
   font-family: var(--font-sans);
   overflow: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .hardware-surface {
-  background: linear-gradient(180deg, #1a1b1f 0%, #0d0d0f 100%);
-  border: 1px solid rgba(255, 255, 255, 0.03);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
 }
 
 .hardware-card {
-  background: #151619;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.02);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
   transition: all 0.2s ease;
 }
 
 .hardware-card:hover {
-  border-color: rgba(255, 255, 255, 0.15);
-  background: #1a1b1f;
+  border-color: var(--border-active);
+  transform: translateY(-2px);
+}
+
+.light .hardware-surface {
+  background: linear-gradient(180deg, #ffffff 0%, #f0f2f5 100%);
 }
 
 .hardware-card.active {
