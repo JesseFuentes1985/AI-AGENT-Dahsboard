@@ -1,0 +1,96 @@
+const IOView = () => {
+  const [streamData, setStreamData] = useState<{ id: string, type: string, source: string, target: string, payload: string, status: string, timestamp: string }[]>([]);
+
+  useEffect(() => {
+    // Generate initial stream data
+    const initial = Array.from({ length: 20 }).map((_, i) => ({
+      id: `PKT-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
+      type: Math.random() > 0.5 ? 'INGRESS' : 'EGRESS',
+      source: ['Ext.API', 'Node-alpha', 'UserClient', 'Subsystem-X'][Math.floor(Math.random() * 4)],
+      target: ['CoreLogic', 'Ext.API', 'DB-Cluster', 'Node-beta'][Math.floor(Math.random() * 4)],
+      payload: `{"data": "${Math.random().toString(36).substring(7)}"}`,
+      status: Math.random() > 0.1 ? 'SUCCESS' : 'DROPPED',
+      timestamp: new Date(Date.now() - Math.random() * 100000).toISOString()
+    })).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    setStreamData(initial);
+
+    // Simulate incoming traffic
+    const interval = setInterval(() => {
+      setStreamData(prev => [{
+        id: `PKT-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
+        type: Math.random() > 0.5 ? 'INGRESS' : 'EGRESS',
+        source: ['Ext.API', 'Node-alpha', 'UserClient', 'Subsystem-X'][Math.floor(Math.random() * 4)],
+        target: ['CoreLogic', 'Ext.API', 'DB-Cluster', 'Node-beta'][Math.floor(Math.random() * 4)],
+        payload: `{"data": "${Math.random().toString(36).substring(7)}"}`,
+        status: Math.random() > 0.1 ? 'SUCCESS' : 'DROPPED',
+        timestamp: new Date().toISOString()
+      }, ...prev].slice(0, 50));
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="flex-1 p-8 overflow-y-auto bg-[var(--bg-deep)]">
+      <div className="max-w-5xl mx-auto space-y-6">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h2 className="text-3xl font-black text-[var(--text-main)] uppercase italic tracking-tighter">I/O Streams</h2>
+            <p className="text-[var(--text-dim)] font-mono text-sm uppercase tracking-widest mt-1">Live Packet Analysis</p>
+          </div>
+          <div className="flex gap-4">
+             <div className="flex flex-col items-end">
+                <span className="text-2xl font-mono text-[#00f2ff]">124.5<span className="text-sm">MB/s</span></span>
+                <span className="text-[8px] font-black text-[var(--text-dim)] uppercase tracking-widest">Ingress Rate</span>
+             </div>
+             <div className="flex flex-col items-end">
+                <span className="text-2xl font-mono text-[#ff007a]">86.2<span className="text-sm">MB/s</span></span>
+                <span className="text-[8px] font-black text-[var(--text-dim)] uppercase tracking-widest">Egress Rate</span>
+             </div>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+           <div className="grid grid-cols-6 px-4 py-2 text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest border-b border-[var(--border-subtle)]">
+              <div>Packet ID</div>
+              <div>Direction</div>
+              <div>Source</div>
+              <div>Target</div>
+              <div>Status</div>
+              <div className="text-right">Timestamp</div>
+           </div>
+           
+           <div className="space-y-1">
+             <AnimatePresence>
+               {streamData.map((pkt) => (
+                 <motion.div 
+                    key={pkt.id}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="grid grid-cols-6 items-center px-4 py-3 bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-sm text-xs font-mono"
+                 >
+                    <div className="text-[var(--text-main)] font-bold">{pkt.id}</div>
+                    <div>
+                       <span className={\`px-2 py-0.5 rounded-sm border text-[9px] font-black tracking-widest \${pkt.type === 'INGRESS' ? 'text-[#00f2ff] border-[#00f2ff]/30 bg-[#00f2ff]/10' : 'text-[#ff007a] border-[#ff007a]/30 bg-[#ff007a]/10'}\`}>
+                         {pkt.type}
+                       </span>
+                    </div>
+                    <div className="text-[var(--text-dim)]">{pkt.source}</div>
+                    <div className="text-[var(--text-dim)]">{pkt.target}</div>
+                    <div>
+                       <span className={\`px-2 py-0.5 rounded-sm border text-[9px] font-black tracking-widest \${pkt.status === 'SUCCESS' ? 'text-green-400 border-green-400/30 bg-green-400/10' : 'text-red-400 border-red-400/30 bg-red-400/10'}\`}>
+                         {pkt.status}
+                       </span>
+                    </div>
+                    <div className="text-right text-[var(--text-dim)] opacity-70">{pkt.timestamp.split('T')[1].replace('Z', '')}</div>
+                 </motion.div>
+               ))}
+             </AnimatePresence>
+           </div>
+        </div>
+      </div>
+    </div>
+  );
+};

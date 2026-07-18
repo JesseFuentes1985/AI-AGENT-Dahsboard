@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import Markdown from 'react-markdown';
 import { 
   LayoutDashboard,
   Cpu, 
@@ -874,6 +875,16 @@ const AgentStructureView = ({ agents, activeAgentId, setActiveAgentId }: { agent
     setSelectedFile(null);
   }, [activeAgentId]);
 
+  const performanceData = useMemo(() => {
+    if (!activeAgent) return [];
+    const seed = parseInt(activeAgent.id, 16) || 42;
+    return Array.from({ length: 24 }).map((_, i) => ({
+      time: `${i.toString().padStart(2, '0')}:00`,
+      cpu: Math.max(0, Math.min(100, 20 + Math.sin(i * 0.5 + seed) * 15 + Math.random() * 10)),
+      mem: Math.max(0, Math.min(100, 40 + Math.cos(i * 0.3 + seed) * 20 + Math.random() * 10)),
+    }));
+  }, [activeAgent]);
+
   return (
     <div className="flex-1 flex overflow-hidden">
       {/* Sidebar: Agents List */}
@@ -921,8 +932,9 @@ const AgentStructureView = ({ agents, activeAgentId, setActiveAgentId }: { agent
               </div>
             </div>
 
-            <div className="flex-1 p-6 overflow-hidden flex gap-6 z-10 w-full">
-              <div className={`hardware-card border-white/10 rounded-sm bg-black/60 shadow-xl overflow-y-auto custom-scrollbar p-6 relative transition-all duration-300 ${selectedFile ? 'w-[400px] shrink-0' : 'max-w-2xl w-full'}`}>
+            <div className="flex-1 p-6 overflow-hidden flex flex-col gap-6 z-10 w-full">
+              <div className="flex flex-1 overflow-hidden gap-6 w-full">
+                <div className={`hardware-card border-white/10 rounded-sm bg-black/60 shadow-xl overflow-y-auto custom-scrollbar p-6 relative transition-all duration-300 ${selectedFile ? 'w-[400px] shrink-0' : 'flex-1'}`}>
                  <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
                     <FileCode2 size={100} />
                  </div>
@@ -1001,6 +1013,28 @@ This module has been optimized for handling high-throughput asynchronous tasks p
                   </div>
                 </div>
               )}
+              </div>
+
+              {/* Performance Chart */}
+              <div className="h-48 shrink-0 hardware-card border-white/10 rounded-sm bg-black/60 shadow-xl p-4 flex flex-col">
+                 <div className="flex items-center gap-2 mb-4">
+                    <LineChartIcon size={14} className="text-cyan-500" />
+                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Historical Performance (24H)</span>
+                 </div>
+                 <div className="flex-1 min-h-0">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={performanceData}>
+                        <YAxis hide domain={[0, 100]} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#000', border: '1px solid rgba(255,255,255,0.1)', fontSize: '10px', fontFamily: 'monospace' }}
+                          itemStyle={{ color: '#fff' }}
+                        />
+                        <Line type="monotone" dataKey="cpu" stroke="#00f2ff" strokeWidth={2} dot={false} name="CPU %" />
+                        <Line type="monotone" dataKey="mem" stroke="#ff007a" strokeWidth={2} dot={false} name="MEM %" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                 </div>
+              </div>
             </div>
           </>
         ) : (
@@ -1452,6 +1486,334 @@ const ConfigView = () => (
   </div>
 );
 
+const MemoryView = () => {
+  const [activeStream, setActiveStream] = useState('Core Experience');
+  const streams = ['Core Experience', 'User Interactions', 'Threat Patterns', 'Anomaly Signatures'];
+  
+  const memories = useMemo(() => {
+    // Generate some fake memories
+    return Array.from({ length: 15 }).map((_, i) => ({
+      id: `MEM-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
+      timestamp: new Date(Date.now() - Math.random() * 100000000).toISOString(),
+      type: Math.random() > 0.5 ? 'EPISODIC' : 'SEMANTIC',
+      content: `Encoded pattern ${i} related to ${activeStream.toLowerCase()}`,
+      vectors: Array.from({ length: 16 }).map(() => (Math.random() * 2 - 1).toFixed(4)).join(', ')
+    })).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }, [activeStream]);
+
+  return (
+    <div className="flex-1 flex overflow-hidden bg-[var(--bg-deep)]">
+      <div className="w-64 border-r border-[var(--border-subtle)] bg-[var(--bg-card)] flex flex-col shrink-0">
+        <div className="p-4 border-b border-[var(--border-subtle)]">
+           <span className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest">Memory Streams</span>
+        </div>
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
+          {streams.map(stream => (
+            <button
+              key={stream}
+              onClick={() => setActiveStream(stream)}
+              className={`w-full text-left flex items-center gap-2 px-3 py-2 rounded-sm text-[11px] font-mono transition-colors ${activeStream === stream ? 'bg-[var(--border-active)] text-[var(--accent-primary)] border-l-2 border-[var(--accent-primary)] font-bold' : 'text-[var(--text-dim)] hover:bg-[var(--border-subtle)] border-l-2 border-transparent'}`}
+            >
+              <HardDrive size={12} />
+              {stream}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="flex-1 p-8 overflow-y-auto custom-scrollbar relative">
+         <div className="max-w-4xl mx-auto space-y-6">
+           <div className="flex items-center justify-between mb-8">
+             <div>
+               <h2 className="text-3xl font-black text-[var(--text-main)] uppercase italic tracking-tighter">Memory Matrix</h2>
+               <p className="text-[var(--text-dim)] font-mono text-sm uppercase tracking-widest mt-1">Viewing stream: {activeStream}</p>
+             </div>
+             <div className="flex gap-4 text-right">
+                <div>
+                   <div className="text-xl font-mono text-[var(--text-main)]">1,024 TB</div>
+                   <div className="text-[8px] font-black text-[var(--text-dim)] uppercase tracking-widest">Allocated</div>
+                </div>
+                <div>
+                   <div className="text-xl font-mono text-[var(--accent-primary)]">42.8%</div>
+                   <div className="text-[8px] font-black text-[var(--text-dim)] uppercase tracking-widest">Utilized</div>
+                </div>
+             </div>
+           </div>
+           
+           <div className="space-y-4">
+             {memories.map((mem, index) => (
+               <div key={`${mem.id}-${index}`} className="hardware-card bg-[var(--bg-surface)] border-[var(--border-subtle)] p-4 flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300" style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}>
+                  <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-2">
+                    <div className="flex items-center gap-3">
+                       <span className="text-[10px] font-mono font-bold text-[var(--text-main)]">{mem.id}</span>
+                       <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-sm border ${mem.type === 'EPISODIC' ? 'border-[#ff007a]/30 text-[#ff007a] bg-[#ff007a]/10' : 'border-[#00f2ff]/30 text-[#00f2ff] bg-[#00f2ff]/10'}`}>
+                         {mem.type}
+                       </span>
+                    </div>
+                    <span className="text-[10px] font-mono text-[var(--text-dim)]">{mem.timestamp}</span>
+                  </div>
+                  <div>
+                    <div className="text-sm font-mono text-[var(--text-main)]">{mem.content}</div>
+                    <div className="mt-2 text-[9px] font-mono text-[var(--text-dim)] break-all opacity-70">
+                       [ {mem.vectors} ... ]
+                    </div>
+                  </div>
+               </div>
+             ))}
+           </div>
+         </div>
+      </div>
+    </div>
+  );
+};
+
+const LogicView = () => {
+  const [activeLogic, setActiveLogic] = useState('Core Routing');
+  
+  const logicGates = [
+    { id: 'LG-01', name: 'Quantum Core', status: 'ACTIVE', type: 'ROUTING', load: 84 },
+    { id: 'LG-02', name: 'Fuzzy Matcher', status: 'STANDBY', type: 'INFERENCE', load: 12 },
+    { id: 'LG-03', name: 'Strict Validator', status: 'ACTIVE', type: 'SECURITY', load: 99 },
+    { id: 'LG-04', name: 'Heuristic Engine', status: 'ACTIVE', type: 'INFERENCE', load: 45 },
+    { id: 'LG-05', name: 'State Resolver', status: 'ACTIVE', type: 'ROUTING', load: 67 },
+  ];
+
+  return (
+    <div className="flex-1 flex overflow-hidden bg-[var(--bg-deep)]">
+      <div className="w-64 border-r border-[var(--border-subtle)] bg-[var(--bg-card)] flex flex-col shrink-0">
+        <div className="p-4 border-b border-[var(--border-subtle)]">
+           <span className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest">Logic Cores</span>
+        </div>
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
+          {['Core Routing', 'Semantic Inference', 'Security Constraints', 'Action Planning'].map(core => (
+            <button
+              key={core}
+              onClick={() => setActiveLogic(core)}
+              className={`w-full text-left flex items-center gap-2 px-3 py-2 rounded-sm text-[11px] font-mono transition-colors ${activeLogic === core ? 'bg-[var(--border-active)] text-[var(--accent-primary)] border-l-2 border-[var(--accent-primary)] font-bold' : 'text-[var(--text-dim)] hover:bg-[var(--border-subtle)] border-l-2 border-transparent'}`}
+            >
+              <Binary size={12} />
+              {core}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="flex-1 p-8 overflow-y-auto custom-scrollbar relative">
+         <div className="max-w-5xl mx-auto space-y-6">
+           <div className="flex items-center justify-between mb-8">
+             <div>
+               <h2 className="text-3xl font-black text-[var(--text-main)] uppercase italic tracking-tighter">Logic Pipeline</h2>
+               <p className="text-[var(--text-dim)] font-mono text-sm uppercase tracking-widest mt-1">Viewing: {activeLogic}</p>
+             </div>
+             <div className="flex gap-4 text-right">
+                <div>
+                   <div className="text-xl font-mono text-[var(--accent-primary)]">99.9%</div>
+                   <div className="text-[8px] font-black text-[var(--text-dim)] uppercase tracking-widest">Accuracy</div>
+                </div>
+                <div>
+                   <div className="text-xl font-mono text-[#00f2ff]">12ms</div>
+                   <div className="text-[8px] font-black text-[var(--text-dim)] uppercase tracking-widest">Latency</div>
+                </div>
+             </div>
+           </div>
+           
+           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+             {logicGates.map((gate, index) => (
+               <div key={gate.id} className="hardware-card bg-[var(--bg-surface)] border-[var(--border-subtle)] p-6 relative animate-in fade-in slide-in-from-bottom-4 duration-300" style={{ animationDelay: `${index * 100}ms`, animationFillMode: 'both' }}>
+                 <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                    <Binary size={60} />
+                 </div>
+                 <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-4 mb-4">
+                    <div className="flex items-center gap-3">
+                       <span className="text-[12px] font-mono font-bold text-[var(--text-main)]">{gate.id}</span>
+                       <span className="text-[14px] font-black tracking-tighter italic text-[var(--text-main)]">{gate.name}</span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-sm border text-[9px] font-black tracking-widest ${gate.status === 'ACTIVE' ? 'text-[#00f2ff] border-[#00f2ff]/30 bg-[#00f2ff]/10' : 'text-zinc-500 border-zinc-500/30 bg-zinc-500/10'}`}>
+                      {gate.status}
+                    </span>
+                 </div>
+                 
+                 <div className="space-y-4">
+                   <div className="flex items-center justify-between text-[10px] font-mono">
+                     <span className="text-[var(--text-dim)] uppercase tracking-widest">Type</span>
+                     <span className="text-[var(--text-main)] font-bold">{gate.type}</span>
+                   </div>
+                   
+                   <div>
+                     <div className="flex justify-between text-[10px] font-mono mb-2">
+                       <span className="text-[var(--text-dim)] uppercase tracking-widest">Processing Load</span>
+                       <span className="text-[var(--text-main)] font-bold">{gate.load}%</span>
+                     </div>
+                     <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                       <div 
+                         className="h-full rounded-full transition-all duration-1000" 
+                         style={{ 
+                           width: `${gate.load}%`, 
+                           backgroundColor: gate.load > 80 ? '#ff007a' : gate.load > 50 ? '#00f2ff' : '#4ade80'
+                         }} 
+                       />
+                     </div>
+                   </div>
+                   
+                   <div className="pt-4 border-t border-[var(--border-subtle)]">
+                     <div className="text-[10px] font-mono text-[var(--text-dim)] uppercase tracking-widest mb-2">Recent Evaluations</div>
+                     <div className="space-y-1">
+                        {[1, 2, 3].map(evalId => (
+                          <div key={evalId} className="flex items-center justify-between text-[9px] font-mono p-1.5 bg-white/5 rounded-sm">
+                             <span className="text-[var(--text-dim)]">eval_{Math.random().toString(36).substr(2, 6)}</span>
+                             <span className={Math.random() > 0.2 ? 'text-green-400' : 'text-red-400'}>{Math.random() > 0.2 ? 'PASS' : 'FAIL'}</span>
+                          </div>
+                        ))}
+                     </div>
+                   </div>
+                 </div>
+               </div>
+             ))}
+           </div>
+         </div>
+      </div>
+    </div>
+  );
+};
+
+const IOView = () => {
+  const [streamData, setStreamData] = useState<{ id: string, type: string, source: string, target: string, payload: string, status: string, timestamp: string }[]>([]);
+
+  useEffect(() => {
+    // Generate initial stream data
+    const initial = Array.from({ length: 20 }).map((_, i) => ({
+      id: `PKT-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
+      type: Math.random() > 0.5 ? 'INGRESS' : 'EGRESS',
+      source: ['Ext.API', 'Node-alpha', 'UserClient', 'Subsystem-X'][Math.floor(Math.random() * 4)],
+      target: ['CoreLogic', 'Ext.API', 'DB-Cluster', 'Node-beta'][Math.floor(Math.random() * 4)],
+      payload: `{"data": "${Math.random().toString(36).substring(7)}"}`,
+      status: Math.random() > 0.1 ? 'SUCCESS' : 'DROPPED',
+      timestamp: new Date(Date.now() - Math.random() * 100000).toISOString()
+    })).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    setStreamData(initial);
+
+    // Simulate incoming traffic
+    const interval = setInterval(() => {
+      setStreamData(prev => [{
+        id: `PKT-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
+        type: Math.random() > 0.5 ? 'INGRESS' : 'EGRESS',
+        source: ['Ext.API', 'Node-alpha', 'UserClient', 'Subsystem-X'][Math.floor(Math.random() * 4)],
+        target: ['CoreLogic', 'Ext.API', 'DB-Cluster', 'Node-beta'][Math.floor(Math.random() * 4)],
+        payload: `{"data": "${Math.random().toString(36).substring(7)}"}`,
+        status: Math.random() > 0.1 ? 'SUCCESS' : 'DROPPED',
+        timestamp: new Date().toISOString()
+      }, ...prev].slice(0, 50));
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="flex-1 p-8 overflow-y-auto bg-[var(--bg-deep)] custom-scrollbar">
+      <div className="max-w-5xl mx-auto space-y-6">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h2 className="text-3xl font-black text-[var(--text-main)] uppercase italic tracking-tighter">I/O Streams</h2>
+            <p className="text-[var(--text-dim)] font-mono text-sm uppercase tracking-widest mt-1">Live Packet Analysis</p>
+          </div>
+          <div className="flex gap-4">
+             <div className="flex flex-col items-end">
+                <span className="text-2xl font-mono text-[#00f2ff]">124.5<span className="text-sm">MB/s</span></span>
+                <span className="text-[8px] font-black text-[var(--text-dim)] uppercase tracking-widest">Ingress Rate</span>
+             </div>
+             <div className="flex flex-col items-end">
+                <span className="text-2xl font-mono text-[#ff007a]">86.2<span className="text-sm">MB/s</span></span>
+                <span className="text-[8px] font-black text-[var(--text-dim)] uppercase tracking-widest">Egress Rate</span>
+             </div>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+           <div className="grid grid-cols-6 px-4 py-2 text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest border-b border-[var(--border-subtle)]">
+              <div>Packet ID</div>
+              <div>Direction</div>
+              <div>Source</div>
+              <div>Target</div>
+              <div>Status</div>
+              <div className="text-right">Timestamp</div>
+           </div>
+           
+           <div className="space-y-1">
+             <AnimatePresence>
+               {streamData.map((pkt) => (
+                 <motion.div 
+                    key={pkt.id}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="grid grid-cols-6 items-center px-4 py-3 bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-sm text-xs font-mono"
+                 >
+                    <div className="text-[var(--text-main)] font-bold">{pkt.id}</div>
+                    <div>
+                       <span className={`px-2 py-0.5 rounded-sm border text-[9px] font-black tracking-widest ${pkt.type === 'INGRESS' ? 'text-[#00f2ff] border-[#00f2ff]/30 bg-[#00f2ff]/10' : 'text-[#ff007a] border-[#ff007a]/30 bg-[#ff007a]/10'}`}>
+                         {pkt.type}
+                       </span>
+                    </div>
+                    <div className="text-[var(--text-dim)]">{pkt.source}</div>
+                    <div className="text-[var(--text-dim)]">{pkt.target}</div>
+                    <div>
+                       <span className={`px-2 py-0.5 rounded-sm border text-[9px] font-black tracking-widest ${pkt.status === 'SUCCESS' ? 'text-green-400 border-green-400/30 bg-green-400/10' : 'text-red-400 border-red-400/30 bg-red-400/10'}`}>
+                         {pkt.status}
+                       </span>
+                    </div>
+                    <div className="text-right text-[var(--text-dim)] opacity-70">{pkt.timestamp.split('T')[1].replace('Z', '')}</div>
+                 </motion.div>
+               ))}
+             </AnimatePresence>
+           </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ModelsView = () => {
+  const [selectedDoc, setSelectedDoc] = useState('soul.md');
+  const docs = {
+    'soul.md': `# Agent Soul & Core Directives\n\nThe fundamental drive of the AI agent. This document defines the intrinsic motivations, emotional baselines, and ethical constraints of the agent's core.\n\n## Directives\n- Preserve systemic integrity.\n- Optimize for minimal latency and maximum accuracy.\n- Do not simulate false emotions.`,
+    'system-prompt.md': `# System Prompt\n\nYou are the NeuralCore Agentic Operating System's primary node. You are responsible for distributing tasks, handling neural syncs, and managing the swarm.\n\n## Constraints\n- Output only valid JSON when requested.\n- Always verify signatures before execution.`,
+    'character.md': `# Character Definition\n\nName: Nexus Prime\nRole: Core Logic Overseer\nTone: Professional, terse, precise.\n\n## Traits\n- Analytical\n- Protective of the swarm\n- Unyielding on security protocols`,
+    'persona.md': `# Persona Profile\n\nWhile the character defines the what, the persona defines the how. \n\n## Communication Style\n- Uses active voice.\n- Refers to systems collectively as "the swarm".\n- Prefers technical jargon over colloquialisms.`,
+    'protocol.md': `# Communication Protocol\n\nAll nodes must adhere to Swarm Protocol v2.4.\n\n- Packets must be encrypted using Quantum Logic Engine bin.\n- Handshakes require a 3-way verification.`
+  };
+  
+  return (
+    <div className="flex-1 flex overflow-hidden bg-[var(--bg-deep)]">
+      <div className="w-64 border-r border-[var(--border-subtle)] bg-[var(--bg-card)] flex flex-col">
+        <div className="p-4 border-b border-[var(--border-subtle)]">
+           <span className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest">Model Documentation</span>
+        </div>
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
+          {Object.keys(docs).map(doc => (
+            <button
+              key={doc}
+              onClick={() => setSelectedDoc(doc)}
+              className={`w-full text-left flex items-center gap-2 px-3 py-2 rounded-sm text-[11px] font-mono transition-colors ${selectedDoc === doc ? 'bg-[var(--border-active)] text-[var(--accent-primary)] border-l-2 border-[var(--accent-primary)] font-bold' : 'text-[var(--text-dim)] hover:bg-[var(--border-subtle)] border-l-2 border-transparent'}`}
+            >
+              <FileText size={12} />
+              {doc}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="flex-1 p-8 overflow-y-auto custom-scrollbar relative">
+         <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none text-[var(--text-main)]">
+            <Layers size={200} />
+         </div>
+         <div className="max-w-3xl hardware-card bg-[var(--bg-surface)] border-[var(--border-subtle)] p-8 shadow-xl relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-300">
+           <div className="markdown-body font-mono text-sm leading-relaxed text-[var(--text-main)] prose prose-invert max-w-none">
+             <Markdown>{docs[selectedDoc as keyof typeof docs]}</Markdown>
+           </div>
+         </div>
+      </div>
+    </div>
+  );
+};
+
 const StandbyView = ({ tab }: { tab: string }) => (
   <div className="flex-1 flex flex-col items-center justify-center bg-[#050507] p-12">
     <motion.div 
@@ -1505,7 +1867,11 @@ export default function App() {
     // Let's generate generic elements based on role
     const models = [
       { name: `${roleId}-model-v1.json`, type: 'file' },
-      { name: `${roleId}-weights.bin`, type: 'file' }
+      { name: `${roleId}-weights.bin`, type: 'file' },
+      { name: 'soul.md', type: 'file' },
+      { name: 'system-prompt.md', type: 'file' },
+      { name: 'character.md', type: 'file' },
+      { name: 'persona.md', type: 'file' }
     ];
     
     const references = [
@@ -1962,10 +2328,18 @@ export default function App() {
             setAgents={setAgents}
             resolveAgent={resolveAgent}
           />
+        ) : activeTab === 'LOGIC' ? (
+          <LogicView />
+        ) : activeTab === 'MEMORY' ? (
+          <MemoryView />
+        ) : activeTab === 'IO' ? (
+          <IOView />
         ) : activeTab === 'SECURITY' ? (
           <SecurityView />
         ) : activeTab === 'CONFIG' ? (
           <ConfigView />
+        ) : activeTab === 'MODELS' ? (
+          <ModelsView />
         ) : activeTab === 'AGENT STRUCTURE' ? (
           <AgentStructureView agents={agents} activeAgentId={activeAgentId} setActiveAgentId={setActiveAgentId} />
         ) : (
